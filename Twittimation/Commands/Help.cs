@@ -23,11 +23,7 @@ namespace Twittimation.Commands
         {
             if (args.Length == 0)
                 foreach(var command in _commands)
-                {
-                    Console.WriteLine("\t" + command.Value.Name);
-                    Console.WriteLine(command.Value.CreateSyntaxString());
-                    Console.WriteLine(command.Value.HelpInfo);
-                }
+                    Console.WriteLine("\t" + command.Value.CreateSyntaxString());
             else
             {
                 var invalidArgs = new List<string>();
@@ -36,9 +32,8 @@ namespace Twittimation.Commands
                     if (_commands.ContainsKey(arg.ToUpper()))
                     {
                         var command = _commands[arg.ToUpper()];
-                        Console.WriteLine("\t" + command.Name);
-                        Console.WriteLine(command.CreateSyntaxString());
-                        Console.WriteLine(command.ExtendedHelp);
+                        Console.WriteLine("\t" + command.CreateSyntaxString());
+                        Console.WriteLine("\t" + string.Join("\t\r\n", command.ExtendedHelp.Split("\r\n")));
                     }
                     else
                     {

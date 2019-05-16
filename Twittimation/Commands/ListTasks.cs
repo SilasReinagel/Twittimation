@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using Twittimation.IO;
 
 namespace Twittimation.Commands
@@ -15,17 +14,19 @@ namespace Twittimation.Commands
         public override string ExtendedHelp { get; } = "Displays all scheduled tasks with their id and the next time they will have another step executed.";
 
         private AppDataJsonIo _io;
+        private string _tasksFileName;
 
-        public ListTasks(AppDataJsonIo io)
+        public ListTasks(AppDataJsonIo io, string tasksFileName)
         {
             _io = io;
+            _tasksFileName = tasksFileName;
         }
 
         public override void Go(string[] args)
         {
             Console.WriteLine("ID".PadRight(16) + "Next Time");
-            foreach(var task in _io.LoadOrDefault(Program.TasksFileName, () => new List<ScheduledTask>()))
-                Console.WriteLine(task.Id.PadRight(15) + " " + (task.ScheduledOperations[task.CompletedOperations]).ToString());
+            foreach(var task in _io.LoadOrDefault(_tasksFileName, () => new List<ScheduledTask>()))
+                Console.WriteLine(task.Id.ToString().PadRight(15) + " " + (task.ScheduledOperations[task.CompletedOperations]).ToString());
         }
     }
 }

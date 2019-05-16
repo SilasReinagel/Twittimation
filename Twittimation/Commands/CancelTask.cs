@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using Twittimation.IO;
 
 namespace Twittimation.Commands
@@ -16,22 +15,24 @@ namespace Twittimation.Commands
         public override string ExtendedHelp => HelpInfo;
 
         private AppDataJsonIo _io;
+        private string _tasksFileName;
 
-        public CancelTask(AppDataJsonIo io)
+        public CancelTask(AppDataJsonIo io, string tasksFileName)
         {
             _io = io;
+            _tasksFileName = tasksFileName;
         }
 
         public override void Go(string[] args)
         {
             ValidateArgCount(args);
-            var tasks = _io.LoadOrDefault(Program.TasksFileName, () => new List<ScheduledTask>());
+            var tasks = _io.LoadOrDefault(_tasksFileName, () => new List<ScheduledTask>());
             foreach(var arg in args)
-                if (tasks.Any(t => t.Id == arg))
-                    tasks.RemoveAll(t => t.Id == arg);
+                if (tasks.Any(t => t.Id.ToString() == arg))
+                    tasks.RemoveAll(t => t.Id.ToString() == arg);
                 else
                     Console.Error.WriteLine("Task with id " + arg + " doesn't exist.");
-            _io.Save(Program.TasksFileName, tasks);
+            _io.Save(_tasksFileName, tasks);
         }
     }
 }

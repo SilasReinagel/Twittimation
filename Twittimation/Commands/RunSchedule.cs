@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using Twittimation.IO;
 
@@ -15,12 +14,14 @@ namespace Twittimation.Commands
         public override string HelpInfo { get; } = "Continuously runs uncompleted tasks that are scheduled for present or the past.";
         public override string ExtendedHelp => HelpInfo;
 
-        private Cli _cli;
         private AppDataJsonIo _io;
+        private string _tasksFileName;
+        private Cli _cli;
 
-        public RunSchedule(AppDataJsonIo io, Cli cli)
+        public RunSchedule(AppDataJsonIo io, string tasksFileName, Cli cli)
         {
             _cli = cli;
+            _tasksFileName = tasksFileName;
             _io = io;
         }
 
@@ -31,7 +32,7 @@ namespace Twittimation.Commands
             while (true)
             {
                 var time = DateTimeOffset.Now;
-                var tasks = _io.LoadOrDefault(Program.TasksFileName, () => new List<ScheduledTask>());
+                var tasks = _io.LoadOrDefault(_tasksFileName, () => new List<ScheduledTask>());
                 for (var i = tasks.Count - 1; i >= 0; i--)
                 {
                     var task = tasks[i];
@@ -44,7 +45,7 @@ namespace Twittimation.Commands
                     if (task.ScheduledOperations.Count == task.CompletedOperations)
                         tasks.RemoveAt(i);
                 }
-                _io.Save(Program.TasksFileName, tasks);
+                _io.Save(_tasksFileName, tasks);
                 Thread.Sleep(5000);
             }
         }

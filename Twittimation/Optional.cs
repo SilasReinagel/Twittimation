@@ -25,11 +25,6 @@ public struct Optional<T>
         return new Optional<T>(value);
     }
 
-    public static implicit operator Optional<T>(Optional<ushort> v)
-    {
-        throw new NotImplementedException();
-    }
-
     public override bool Equals(object obj)
     {
         if (obj is Optional<T>)

@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using System.Web;
 
 namespace Twittimation
 {
@@ -29,13 +26,14 @@ namespace Twittimation
             _encryptor = new HMACSHA1(new ASCIIEncoding().GetBytes(consumerKeySecret + "&" + accessTokenSecret));
         }
 
-        public async Task<string> SendRequest(string relativeUrl, Dictionary<string, string> data)
+        public async Task<string> SendRequest(string relativeUrl, IEnumerable<KeyValuePair<string, string>> data)
         {
             var fullUrl = _apiUrl + relativeUrl;
-            AddOauthData(fullUrl, data);
+            var dataAsDictionary = data.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            AddOauthData(fullUrl, dataAsDictionary);
             var request = new HttpRequest(fullUrl, "POST", string.Join("&", data.Where(kvp => !kvp.Key.StartsWith("oauth_"))
                     .Select(kvp => Uri.EscapeDataString(kvp.Key).Replace("%20", "+") + "=" + Uri.EscapeDataString(kvp.Value).Replace("%20", "+"))),
-                new KeyValuePair<string, string>("Authorization", GenerateOAuthHeader(data)),
+                new KeyValuePair<string, string>("Authorization", GenerateOAuthHeader(dataAsDictionary)),
                 new KeyValuePair<string, string>("Content-Type", "application/x-www-form-urlencoded"));
             await request.Go();
             return request.ResponseAsString;

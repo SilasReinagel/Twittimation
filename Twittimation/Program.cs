@@ -7,35 +7,35 @@ namespace Twittimation
 {
     public class Program
     {
-        public static bool Exiting = false;
         private static AppDataJsonIo _io { get; } = new AppDataJsonIo("Twittimation");
-        public readonly static string TasksFileName = "Tasks";
-        public readonly static string TwitterCredentialsFileName = "Credentials";
 
         public static void Main(string[] args)
         {
-            Console.SetIn(new StreamReader(Console.OpenStandardInput(8192)));
             var cli = new Cli("Invalid Command, type help to display all commands with their help sections");
             AddCommands(cli);
             if (args.Length == 0)
-                while (!Exiting)
+                cli.Execute("RunSchedule");
+            else if (args[0].Equals("debug", StringComparison.OrdinalIgnoreCase))
+                while (true)
                     cli.Execute(Console.ReadLine());
             else
-                cli.Execute(args);
+                cli.Execute(args, true);
+            
         }
 
         private static void AddCommands(Cli cli)
         {
-            var tweet = new Tweet(_io);
-            cli.AddCommands(new SaveTwitterCredentials(_io),
-                new ScheduleTweet(_io, tweet),
-                new ScheduleTweetCollection(_io, tweet),
-                new RunSchedule(_io, cli),
-                new ListTasks(_io),
-                new CancelTask(_io),
+            var tasksFileName = "Tasks";
+            var twitterCredentialsFileName = "Credentials";
+            var tweet = new Tweet(_io, twitterCredentialsFileName);
+            cli.AddCommands(new SaveTwitterCredentials(_io, twitterCredentialsFileName),
+                new ScheduleTweet(_io, tasksFileName, tweet),
+                new ScheduleTweetCollection(_io, tasksFileName, tweet),
+                new RunSchedule(_io, tasksFileName, cli),
+                new ListTasks(_io, tasksFileName),
+                new CancelTask(_io, tasksFileName),
                 tweet,
-                new Help(cli.Commands),
-                new Exit());
+                new Help(cli.Commands));
         }
     }
 }

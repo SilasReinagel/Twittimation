@@ -17,7 +17,7 @@ namespace Twittimation.Commands
 
         public string CreateSyntaxString()
         {
-            return $"Syntax: {Name}{string.Concat(RequiredArgs.Select(a => " <" + a + ">"))}{string.Concat(OptionalArgs.Select(a => " [<" + a + ">]"))}{(OptionalRepeatedArg.HasValue ? " [<" + OptionalRepeatedArg.Value + ">]...": "")}";
+            return $"{Name}{string.Concat(RequiredArgs.Select(a => " <" + a + ">"))}{string.Concat(OptionalArgs.Select(a => " [<" + a + ">]"))}{(OptionalRepeatedArg.HasValue ? " [<" + OptionalRepeatedArg.Value + ">]...": "")}";
         }
 
         protected void ValidateArgCount(string[] args)
@@ -30,12 +30,12 @@ namespace Twittimation.Commands
 
         protected void ThrowInsufficentArgs()
         {
-            throw new ArgumentException("Too few args!\r\n" + CreateSyntaxString());
+            throw new ArgumentException("Too few args!\r\nSyntax: " + CreateSyntaxString());
         }
 
         protected void ThrowTooManyArgs()
         {
-            throw new ArgumentException("Too many args!\r\n" + CreateSyntaxString());
+            throw new ArgumentException("Too many args!\r\nSyntax: " + CreateSyntaxString());
         }
     }
 }

@@ -18,20 +18,22 @@ namespace Twittimation.Commands
         public override string ExtendedHelp { get; } = "Posts a tweet with the specified text using the saved credentials.";
 
         private AppDataJsonIo _io;
+        private string _twitterCredentialsFileName;
 
-        public Tweet(AppDataJsonIo io)
+        public Tweet(AppDataJsonIo io, string twitterCredentialsFileName)
         {
             _io = io;
+            _twitterCredentialsFileName = twitterCredentialsFileName;
         }
 
         public override void Go(string[] args)
         {
             ValidateArgCount(args);
             if (!_io.HasSave("Credentials"))
-                Console.Error.WriteLine("No credentials were provided for this request");
+                throw new ArgumentException("No credentials were provided for this request");
             try
             {
-                var credentials = _io.Load<Credentials>(Program.TwitterCredentialsFileName);
+                var credentials = _io.Load<Credentials>(_twitterCredentialsFileName);
                 var client = new OAuthClient("https://api.twitter.com/1.1/",
                     credentials.ConsumerKey, credentials.ConsumerKeySecret, credentials.AccessToken, credentials.AccessTokenSecret);
                 var result = JObject.Parse(client.SendRequest("statuses/update.json",

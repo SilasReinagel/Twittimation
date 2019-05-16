@@ -8,7 +8,6 @@ namespace Twittimation
 {
     public class Cli
     {
-        public const string MISMATCHED_QUOTES_MESSAGE = "Quotes must only be used in pairs around an arg!";
         public Dictionary<string, Command> Commands { get; private set; }
         private string _commandNotFoundMessage;
 
@@ -30,12 +29,12 @@ namespace Twittimation
             Commands.Add(command.Name.ToUpper(), command);
         }
 
-        public void Execute(string input)
+        public void Execute(string input, bool exit = false)
         {
-            Execute(ReadCommandLineArgs(input));
+            Execute(ReadCommandLineArgs(input), exit);
         }
 
-        public void Execute(string[] args)
+        public void Execute(string[] args, bool exit = false)
         {
             try
             {
@@ -47,7 +46,11 @@ namespace Twittimation
             catch (ArgumentException x)
             {
                 Console.Error.WriteLine(x.Message);
+                if (exit)
+                    Environment.Exit(1);
             }
+            if (exit)
+                Environment.Exit(0);
         }
 
         private string[] ReadCommandLineArgs(string input)

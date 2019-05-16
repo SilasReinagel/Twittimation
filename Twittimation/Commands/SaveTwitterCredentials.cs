@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 using Twittimation.IO;
 
 namespace Twittimation.Commands
@@ -16,16 +14,18 @@ namespace Twittimation.Commands
         public override string ExtendedHelp { get; } = "Saves your keys and tokens needed for oauth authentication for twitter so this program can tweet or do other twitter actions on your behalf.\r\nTo obtain keys and tokens you will need to add an app at developer.twitter.com .";
 
         private AppDataJsonIo _io;
+        private string _twitterCredentialsFileName;
 
-        public SaveTwitterCredentials(AppDataJsonIo io)
+        public SaveTwitterCredentials(AppDataJsonIo io, string twitterCredentialsFileName)
         {
             _io = io;
+            _twitterCredentialsFileName = twitterCredentialsFileName;
         }
 
         public override void Go(string[] args)
         {
             ValidateArgCount(args);
-            _io.Save(Program.TwitterCredentialsFileName, new Credentials(args[0], args[1], args[2], args[3]));
+            _io.Save(_twitterCredentialsFileName, new Credentials(args[0], args[1], args[2], args[3]));
         }
     }
 }
