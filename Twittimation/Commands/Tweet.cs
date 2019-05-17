@@ -3,37 +3,33 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using Twittimation.IO;
 
 namespace Twittimation.Commands
 {
-    public class Tweet : Command
+    public sealed class Tweet : Command
     {
-        public override string Name { get; } = "Tweet";
         public override List<string> RequiredArgs { get; } = new List<string>() { "Text" };
         public override List<string> OptionalArgs { get; } = new List<string>();
         public override Optional<string> OptionalRepeatedArg { get; } = new Optional<string>();
         public override string HelpInfo { get; } = "Posts a tweet with the specified text.";
         public override string ExtendedHelp { get; } = "Posts a tweet with the specified text using the saved credentials.";
 
-        private AppDataJsonIo _io;
-        private string _twitterCredentialsFileName;
+        private readonly IStored<Credentials> _credentials;
 
-        public Tweet(AppDataJsonIo io, string twitterCredentialsFileName)
+        public Tweet(IStored<Credentials> credentials)
         {
-            _io = io;
-            _twitterCredentialsFileName = twitterCredentialsFileName;
+            _credentials = credentials;
         }
 
-        public override void Go(string[] args)
+        protected override void Go(string[] args)
         {
-            ValidateArgCount(args);
-            if (!_io.HasSave("Credentials"))
-                throw new ArgumentException("No credentials were provided for this request");
+            var credentials = _credentials.Get();
+            if (!credentials.AreValid)
+                throw new ArgumentException("Credentials have not been setup. Use 'SaveCredentials' to initialize.");
+
             try
             {
-                var credentials = _io.Load<Credentials>(_twitterCredentialsFileName);
                 var client = new OAuthClient("https://api.twitter.com/1.1/",
                     credentials.ConsumerKey, credentials.ConsumerKeySecret, credentials.AccessToken, credentials.AccessTokenSecret);
                 var result = JObject.Parse(client.SendRequest("statuses/update.json",

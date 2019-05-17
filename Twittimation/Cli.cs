@@ -8,8 +8,8 @@ namespace Twittimation
 {
     public class Cli
     {
-        public Dictionary<string, Command> Commands { get; private set; }
-        private string _commandNotFoundMessage;
+        public Dictionary<string, Command> Commands { get; }
+        private readonly string _commandNotFoundMessage;
 
         public Cli(string commandNotFoundMessage, params Command[] commands)
         {
@@ -29,28 +29,28 @@ namespace Twittimation
             Commands.Add(command.Name.ToUpper(), command);
         }
 
-        public void Execute(string input, bool exit = false)
+        public void Execute(string input)
         {
-            Execute(ReadCommandLineArgs(input), exit);
+            Execute(ReadCommandLineArgs(input));
         }
 
-        public void Execute(string[] args, bool exit = false)
+        public void Execute(string[] args)
         {
             try
             {
                 if (args.Length > 0 && Commands.ContainsKey(args.First()))
-                    Commands[args.First()].Go(args.SubArray(1, args.Length - 1));
+                {
+                    Commands[args.First()].Execute(args.SubArray(1, args.Length - 1));
+                    Environment.Exit(0);
+                }
                 else
                     Console.Error.WriteLine(_commandNotFoundMessage);
             }
             catch (ArgumentException x)
             {
                 Console.Error.WriteLine(x.Message);
-                if (exit)
-                    Environment.Exit(1);
             }
-            if (exit)
-                Environment.Exit(0);
+            Environment.Exit(1);
         }
 
         private string[] ReadCommandLineArgs(string input)

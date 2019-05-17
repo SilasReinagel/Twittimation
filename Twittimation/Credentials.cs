@@ -2,6 +2,7 @@
 {
     public class Credentials
     {
+        public bool AreValid => !string.Equals("N/A", ConsumerKey);
         public string ConsumerKey { get; set; }
         public string ConsumerKeySecret { get; set; }
         public string AccessToken { get; set; }
