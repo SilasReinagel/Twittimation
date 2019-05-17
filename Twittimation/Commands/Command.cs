@@ -6,14 +6,19 @@ namespace Twittimation.Commands
 {
     public abstract class Command
     {
-        public abstract string Name { get; }
+        public string Name => GetType().Name;
         public abstract List<string> RequiredArgs { get; }
         public abstract List<string> OptionalArgs { get; }
         public abstract Optional<string> OptionalRepeatedArg { get; }
         public abstract string HelpInfo { get; }
         public abstract string ExtendedHelp { get; }
 
-        public abstract void Go(string[] args);
+        protected abstract void Go(string[] args);
+        public void Execute(string[] args)
+        {
+            ValidateArgCount(args);
+            Go(args);
+        }
 
         public string CreateSyntaxString()
         {
@@ -23,12 +28,12 @@ namespace Twittimation.Commands
         protected void ValidateArgCount(string[] args)
         {
             if (args.Length < RequiredArgs.Count)
-                ThrowInsufficentArgs();
+                ThrowInsufficientArgs();
             else if (!OptionalRepeatedArg.HasValue && args.Length > RequiredArgs.Count + OptionalArgs.Count)
                 ThrowTooManyArgs();
         }
 
-        protected void ThrowInsufficentArgs()
+        protected void ThrowInsufficientArgs()
         {
             throw new ArgumentException("Too few args!\r\nSyntax: " + CreateSyntaxString());
         }
