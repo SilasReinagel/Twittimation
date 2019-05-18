@@ -1,9 +1,11 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using Twittimation.Http;
 
 namespace Twittimation
 {
@@ -26,42 +28,55 @@ namespace Twittimation
             _encryptor = new HMACSHA1(new ASCIIEncoding().GetBytes(consumerKeySecret + "&" + accessTokenSecret));
         }
 
-        public async Task<string> SendRequest(string relativeUrl, IEnumerable<KeyValuePair<string, string>> data)
+        public async Task<string> SendRequest(string method, string relativeUrl, IHttpKeyValuePairs data)
         {
-            var fullUrl = _apiUrl + relativeUrl;
-            var dataAsDictionary = data.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-            AddOauthData(fullUrl, dataAsDictionary);
-            var request = new HttpRequest(fullUrl, "POST", string.Join("&", data.Where(kvp => !kvp.Key.StartsWith("oauth_"))
-                    .Select(kvp => Uri.EscapeDataString(kvp.Key).Replace("%20", "+") + "=" + Uri.EscapeDataString(kvp.Value).Replace("%20", "+"))),
-                new KeyValuePair<string, string>("Authorization", GenerateOAuthHeader(dataAsDictionary)),
-                new KeyValuePair<string, string>("Content-Type", "application/x-www-form-urlencoded"));
+            return await SendRequest(method, relativeUrl, new List<KeyValuePair<string, string>>(), data);
+        }
+
+        public async Task<string> SendRequest(string method, string relativeUrl,
+            IEnumerable<KeyValuePair<string, string>> query, IHttpKeyValuePairs data)
+        {
+            var baseUrl = _apiUrl + relativeUrl;
+            HttpRequest request;
+            if(method == "GET")
+                request = new HttpRequest(baseUrl + (query.Count() == 0 ? "" :
+                        "?" + string.Join("&", query.Select(kvp => Uri.EscapeDataString(kvp.Key) + "=" + Uri.EscapeDataString(kvp.Value)))),
+                    method,
+                    new KeyValuePair<string, string>("Authorization", GenerateOAuthHeader(method, baseUrl, query, data)),
+                    new KeyValuePair<string, string>("Content-Type", data.ContentType));
+            else
+                request = new HttpRequest(baseUrl + (query.Count() == 0 ? "" :
+                        "?" + string.Join("&", query.Select(kvp => Uri.EscapeDataString(kvp.Key) + "=" + Uri.EscapeDataString(kvp.Value)))),
+                    method,
+                    data.GetContent(),
+                    new KeyValuePair<string, string>("Authorization", GenerateOAuthHeader(method, baseUrl, query, data)),
+                    new KeyValuePair<string, string>("Content-Type", data.ContentType));
             await request.Go();
             return request.ResponseAsString;
         }
 
-        private void AddOauthData(string url, Dictionary<string, string> data)
+        private string GenerateSignature(string method, string url, Dictionary<string, string> data)
         {
-            data.Add("oauth_consumer_key", _consumerKey);
-            data.Add("oauth_token", _accessToken);
-            data.Add("oauth_signature_method", "HMAC-SHA1");
-            data.Add("oauth_timestamp", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString());
-            data.Add("oauth_nonce", Guid.NewGuid().ToString());
-            data.Add("oauth_version", "1.0");
-            data.Add("oauth_signature", GenerateSignature(url, data));
-        }
-
-        private string GenerateSignature(string url, Dictionary<string, string> data)
-        {
-            var signatureData = "POST&" + Uri.EscapeDataString(url) + "&" + Uri.EscapeDataString(string.Join("&",
+            var signatureData = method + "&" + Uri.EscapeDataString(url) + "&" + Uri.EscapeDataString(string.Join("&",
                 data.Select(kvp => Uri.EscapeDataString(kvp.Key) + "=" + Uri.EscapeDataString(kvp.Value)).OrderBy(s => s)));
             return Convert.ToBase64String(_encryptor.ComputeHash(new ASCIIEncoding().GetBytes(signatureData)));
         }
 
-        private string GenerateOAuthHeader(Dictionary<string, string> data)
+        private string GenerateOAuthHeader(string method, string baseUrl, IEnumerable<KeyValuePair<string, string>> query, IHttpKeyValuePairs data)
         {
-            return "OAuth " + string.Join(",", data
-                .Where(kvp => kvp.Key.StartsWith("oauth_"))
-                .Select(kvp => Uri.EscapeDataString(kvp.Key) + "=\"" + Uri.EscapeDataString(kvp.Value) +"\""));
+            var oauthData = new Dictionary<string, string>
+            {
+                { "oauth_consumer_key", _consumerKey },
+                { "oauth_token", _accessToken },
+                { "oauth_signature_method", "HMAC-SHA1" },
+                { "oauth_timestamp", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString() },
+                { "oauth_nonce", Guid.NewGuid().ToString() },
+                { "oauth_version", "1.0" }
+            };
+            oauthData.Add("oauth_signature",
+                GenerateSignature(method, baseUrl, data.Union(oauthData).Union(query).ToDictionary(k => k.Key, v => v.Value)));
+            return "OAuth " + string.Join(",", oauthData
+                .Select(kvp => Uri.EscapeDataString(kvp.Key) + "=\"" + Uri.EscapeDataString(kvp.Value) + "\""));
         }
     }
 }

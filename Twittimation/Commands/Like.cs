@@ -3,23 +3,24 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Twittimation.Http;
 using Twittimation.IO;
 using Twittimation.Twitter;
 
 namespace Twittimation.Commands
 {
-    public sealed class Tweet : Command
+    public sealed class Like : Command
     {
-        public override List<string> RequiredArgs { get; } = new List<string>() { "Text" };
+        public override List<string> RequiredArgs { get; } = new List<string>() { "TweetId" };
         public override List<string> OptionalArgs { get; } = new List<string>();
         public override Optional<string> OptionalRepeatedArg { get; } = new Optional<string>();
-        public override string HelpInfo { get; } = "Posts a tweet with the specified text.";
-        public override string ExtendedHelp { get; } = "Posts a tweet with the specified text using the saved credentials.";
+        public override string HelpInfo { get; } = "Likes the specified tweet.";
+        public override string ExtendedHelp => HelpInfo;
 
         private readonly IStored<Credentials> _credentials;
 
-        public Tweet(IStored<Credentials> credentials)
+        public Like(IStored<Credentials> credentials)
         {
             _credentials = credentials;
         }
@@ -34,8 +35,8 @@ namespace Twittimation.Commands
             {
                 var client = new OAuthClient("https://api.twitter.com/1.1/",
                     credentials.ConsumerKey, credentials.ConsumerKeySecret, credentials.AccessToken, credentials.AccessTokenSecret);
-                var result = JObject.Parse(client.SendRequest("POST", "statuses/update.json", new Dictionary<string, string>(),
-                    new UrlEncodedData(new Dictionary<string, string>() { { "status", args[0] }, { "trim_user", "1" } })).Result);
+                var result = JObject.Parse(client.SendRequest("POST", "favorites/create.json",
+                    new Dictionary<string, string>() { { "id", args[0] } }, new JsonData()).Result);
                 if (result.ContainsKey("errors"))
                 {
                     var error = result.GetValue("errors").ToObject<TwitterError[]>();

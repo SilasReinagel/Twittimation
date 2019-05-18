@@ -29,19 +29,19 @@ namespace Twittimation
             Commands.Add(command.Name.ToUpper(), command);
         }
 
-        public void Execute(string input)
+        public bool Execute(string input)
         {
-            Execute(ReadCommandLineArgs(input));
+            return Execute(ReadCommandLineArgs(input));
         }
 
-        public void Execute(string[] args)
+        public bool Execute(string[] args)
         {
             try
             {
                 if (args.Length > 0 && Commands.ContainsKey(args.First()))
                 {
                     Commands[args.First()].Execute(args.SubArray(1, args.Length - 1));
-                    Environment.Exit(0);
+                    return true;
                 }
                 else
                     Console.Error.WriteLine(_commandNotFoundMessage);
@@ -50,7 +50,7 @@ namespace Twittimation
             {
                 Console.Error.WriteLine(x.Message);
             }
-            Environment.Exit(1);
+            return false;
         }
 
         private string[] ReadCommandLineArgs(string input)

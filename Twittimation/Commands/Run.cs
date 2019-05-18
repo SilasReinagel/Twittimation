@@ -13,40 +13,51 @@ namespace Twittimation.Commands
         public override string HelpInfo { get; } = "Continuously runs uncompleted tasks that are scheduled for present or the past.";
         public override string ExtendedHelp => HelpInfo;
 
-        private readonly IStored<Tasks> _tasks;
+        private readonly IStored<Tasks> _tweetTasks;
+        private readonly IStored<Tasks> _likeTasks;
         private readonly Cli _cli;
+        private readonly IAutomaton _automaton;
 
-        public Run(IStored<Tasks> tasks, Cli cli)
+        public Run(IStored<Tasks> tasks, IStored<Tasks> likes, Cli cli, IAutomaton automaton)
         {
-            _tasks = tasks;
+            _tweetTasks = tasks;
+            _likeTasks = likes;
             _cli = cli;
+            _automaton = automaton;
         }
 
         protected override void Go(string[] args)
         {
-            Console.WriteLine($"Running. Currently, there are {_tasks.Get().Count} scheduled tasks.");
+            Console.WriteLine($"Running. Currently, there are {_tweetTasks.Get().Count} scheduled tasks.");
             while (true)
             {
                 var time = DateTimeOffset.Now;
-                _tasks.Update(tasks =>
-                {
-                    for (var i = tasks.Count - 1; i >= 0; i--)
-                    {
-                        var task = tasks[i];
-                        while (task.ScheduledOperations.Count > task.CompletedOperations
-                               && time > task.ScheduledOperations[task.CompletedOperations].Time)
-                        {
-                            _cli.Execute(task.ScheduledOperations[task.CompletedOperations].Operation);
-                            task.CompletedOperations++;
-                        }
-
-                        if (task.ScheduledOperations.Count == task.CompletedOperations)
-                            tasks.RemoveAt(i);
-                    }
-                    return tasks;
-                });
+                _tweetTasks.Update(RunScheduledTasks(time));
+                _likeTasks.Update(RunScheduledTasks(time));
+                _automaton.Update();
                 Thread.Sleep(5000);
             }
+        }
+
+        private Func<Tasks, Tasks> RunScheduledTasks(DateTimeOffset time)
+        {
+            return tasks =>
+            {
+                for (var i = tasks.Count - 1; i >= 0; i--)
+                {
+                    var task = tasks[i];
+                    while (task.ScheduledOperations.Count > task.CompletedOperations
+                           && time > task.ScheduledOperations[task.CompletedOperations].Time)
+                    {
+                        _cli.Execute(task.ScheduledOperations[task.CompletedOperations].Operation);
+                        task.CompletedOperations++;
+                    }
+
+                    if (task.ScheduledOperations.Count == task.CompletedOperations)
+                        tasks.RemoveAt(i);
+                }
+                return tasks;
+            };
         }
     }
 }

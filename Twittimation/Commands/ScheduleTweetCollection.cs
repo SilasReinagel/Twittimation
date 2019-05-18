@@ -40,7 +40,7 @@ namespace Twittimation.Commands
                     id++;
                 RandomizeOrder(texts, (int)time.ToUnixTimeSeconds());
                 var task = new ScheduledTask(id,
-                    texts.Select((t, i) => new ScheduledOperation(time + interval * i, _tweet.CreateCommandString(t))).ToList());
+                    texts.Select((t, i) => new ScheduledOperation(time + interval * i, _tweet.Name, t)).ToList());
                 tasks.Add(task);
                 Console.WriteLine("Task added:\r\nID: " + task.Id + "\r\nFirst Time: " + task.ScheduledOperations[0].Time.ToString());
                 return tasks;
