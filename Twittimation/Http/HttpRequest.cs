@@ -6,7 +6,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Twittimation
+namespace Twittimation.Http
 {
     public class HttpRequest
     {
@@ -152,7 +152,7 @@ namespace Twittimation
                 try
                 {
                     bool b = task.Wait(duration);
-                    if (b) return (HttpWebResponse)task.Result;
+                    if (b) return (HttpWebResponse)task.GetAwaiter().GetResult();
                 }
                 catch (AggregateException exception)
                 {

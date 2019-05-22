@@ -1,4 +1,4 @@
-﻿namespace Twittimation
+﻿namespace Twittimation.Twitter
 {
     public class TwitterError
     {

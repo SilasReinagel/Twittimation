@@ -35,12 +35,41 @@ namespace Twittimation.Commands
 
         protected void ThrowInsufficientArgs()
         {
-            throw new ArgumentException("Too few args!\r\nSyntax: " + CreateSyntaxString());
+            throw new UserErrorException("Too few args!\r\nSyntax: " + CreateSyntaxString());
         }
 
         protected void ThrowTooManyArgs()
         {
-            throw new ArgumentException("Too many args!\r\nSyntax: " + CreateSyntaxString());
+            throw new UserErrorException("Too many args!\r\nSyntax: " + CreateSyntaxString());
+        }
+
+        protected void RethrowExceptionsAsUserError(Action action, params Type[] exceptionTypes)
+        {
+            RethrowExceptionsAsUserError((Delegate)action, exceptionTypes);
+        }
+
+        protected T RethrowExceptionsAsUserError<T>(Func<T> action, params Type[] exceptionTypes)
+        {
+            return (T)RethrowExceptionsAsUserError((Delegate)action, exceptionTypes);
+        }
+
+        private object RethrowExceptionsAsUserError(Delegate action, Type[] exceptionTypes)
+        {
+            try
+            {
+                return action.DynamicInvoke();
+            }
+            catch (UserErrorException x)
+            {
+                throw x;
+            }
+            catch (Exception x)
+            {
+                var type = x.GetType();
+                if (exceptionTypes.Any(t => type.IsAssignableFrom(t)))
+                    throw new UserErrorException("Error\r\n" + x.GetType().ToString() + "\r\n" + x.Message);
+                throw x;
+            }
         }
     }
 }

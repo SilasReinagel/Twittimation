@@ -1,4 +1,5 @@
-﻿using Twittimation.Commands;
+﻿using System;
+using Twittimation.Commands;
 using Twittimation.IO;
 
 namespace Twittimation
@@ -10,27 +11,36 @@ namespace Twittimation
         public static void Main(string[] args)
         {
             var cli = new Cli("Invalid Command, type 'help' to display all commands with their help sections");
-            AddCommands(cli);
+            AddNormalCommands(cli);
+            var interactiveCli = new Cli("Invalid Command, type 'help' to display all commands with their help sections");
+            AddNormalCommands(interactiveCli);
+            interactiveCli.AddCommand(new Exit());
+            cli.AddCommand(new InteractiveMode(interactiveCli));
             if (args.Length == 0)
                 cli.Execute(nameof(Run));
             else
-                cli.Execute(args);
-            
+                if (!cli.Execute(args))
+                    Environment.Exit(1);
         }
 
-        private static void AddCommands(Cli cli)
+        private static void AddNormalCommands(Cli cli)
         {
             var credentials = new KeyStored<Credentials>(_io, "Credentials", () => new Credentials("N/A", "N/A", "N/A", "N/A"));
-            var tasks = new KeyStored<Tasks>(_io, "Tasks", () => new Tasks());
+            var tweetTasks = new KeyStored<Tasks>(_io, "TweetTasks", () => new Tasks());
+            var likeTasks = new KeyStored<Tasks>(_io, "LikeTasks", () => new Tasks());
+            var automatonData = new KeyStored<RandomLikeAutomatonData>(_io, "AutomatonData", () => new RandomLikeAutomatonData());
             var tweet = new Tweet(credentials);
+            var like = new Like(credentials);
             cli.AddCommands(
                 new SaveCredentials(credentials),
-                new ScheduleTweet(tasks, tweet),
-                new ScheduleTweetCollection(tasks, tweet),
-                new Run(tasks, cli),
-                new ListTasks(tasks),
-                new Cancel(tasks),
+                new ScheduleTweet(tweetTasks, tweet),
+                new ScheduleTweetCollection(tweetTasks, tweet),
+                new Run(tweetTasks, likeTasks, cli, new RandomLikeAutomaton(automatonData, likeTasks, like, credentials)),
+                new ListTasks(tweetTasks),
+                new Cancel(tweetTasks),
                 tweet,
+                like,
+                new SetMaxLikes(automatonData, credentials),
                 new Help(cli.Commands));
         }
     }

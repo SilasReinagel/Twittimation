@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Twittimation.Commands.Converters;
 using Twittimation.IO;
 
 namespace Twittimation.Commands
@@ -24,14 +25,11 @@ namespace Twittimation.Commands
 
         protected override void Go(string[] args)
         {
-            if (!DateTimeOffset.TryParse(args[0], out DateTimeOffset time))
-                throw new ArgumentException("Invalid time format! Time can be formatted as \"Year/Month/Day Hour:Minute:Second\"");
-            if (time < DateTimeOffset.Now)
-                throw new ArgumentException("Time is in the past!");
+            var time = DateTimeOffsetConverter.Convert(args[0]);
             if (!TimeSpan.TryParse(args[1], out TimeSpan interval))
-                throw new ArgumentException("Invalid time span format! Time spans can be formatted as \"Days:Hours:Minutes:Seconds\"");
+                throw new UserErrorException("Invalid time span format! Time spans can be formatted as \"Days:Hours:Minutes:Seconds\"");
             if (interval <= TimeSpan.Zero)
-                throw new ArgumentException("Time span is not positive!");
+                throw new UserErrorException("Time span is not positive!");
             var texts = args.SubArray(2, args.Length - 2);
             _tasks.Update(tasks =>
             {
@@ -40,7 +38,7 @@ namespace Twittimation.Commands
                     id++;
                 RandomizeOrder(texts, (int)time.ToUnixTimeSeconds());
                 var task = new ScheduledTask(id,
-                    texts.Select((t, i) => new ScheduledOperation(time + interval * i, _tweet.CreateCommandString(t))).ToList());
+                    texts.Select((t, i) => new ScheduledOperation(time + interval * i, _tweet.Name, t)).ToList());
                 tasks.Add(task);
                 Console.WriteLine("Task added:\r\nID: " + task.Id + "\r\nFirst Time: " + task.ScheduledOperations[0].Time.ToString());
                 return tasks;
