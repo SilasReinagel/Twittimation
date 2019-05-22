@@ -152,7 +152,7 @@ namespace Twittimation.Http
                 try
                 {
                     bool b = task.Wait(duration);
-                    if (b) return (HttpWebResponse)task.Result;
+                    if (b) return (HttpWebResponse)task.GetAwaiter().GetResult();
                 }
                 catch (AggregateException exception)
                 {

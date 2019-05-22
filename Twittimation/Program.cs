@@ -11,7 +11,11 @@ namespace Twittimation
         public static void Main(string[] args)
         {
             var cli = new Cli("Invalid Command, type 'help' to display all commands with their help sections");
-            AddCommands(cli);
+            AddNormalCommands(cli);
+            var interactiveCli = new Cli("Invalid Command, type 'help' to display all commands with their help sections");
+            AddNormalCommands(interactiveCli);
+            interactiveCli.AddCommand(new Exit());
+            cli.AddCommand(new InteractiveMode(interactiveCli));
             if (args.Length == 0)
                 cli.Execute(nameof(Run));
             else
@@ -19,7 +23,7 @@ namespace Twittimation
                     Environment.Exit(1);
         }
 
-        private static void AddCommands(Cli cli)
+        private static void AddNormalCommands(Cli cli)
         {
             var credentials = new KeyStored<Credentials>(_io, "Credentials", () => new Credentials("N/A", "N/A", "N/A", "N/A"));
             var tweetTasks = new KeyStored<Tasks>(_io, "TweetTasks", () => new Tasks());
@@ -36,9 +40,8 @@ namespace Twittimation
                 new Cancel(tweetTasks),
                 tweet,
                 like,
-                new SetMaxLikes(automatonData),
-                new Help(cli.Commands),
-                new InteractiveMode(cli));
+                new SetMaxLikes(automatonData, credentials),
+                new Help(cli.Commands));
         }
     }
 }

@@ -20,9 +20,6 @@ namespace Twittimation.Commands
 
         protected override void Go(string[] args)
         {
-            var commands = _cli.Commands;
-            commands.Remove(GetType().Name);
-            _cli.AddCommand(new Exit());
             while (true)
                 _cli.Execute(Console.ReadLine());
         }

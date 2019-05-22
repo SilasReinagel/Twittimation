@@ -1,7 +1,9 @@
-﻿namespace Twittimation
+﻿using System;
+
+namespace Twittimation
 {
     public interface IAutomaton
     {
-        void Update();
+        void Update(TimeSpan timeSpan);
     }
 }

@@ -46,7 +46,7 @@ namespace Twittimation
                 else
                     Console.Error.WriteLine(_commandNotFoundMessage);
             }
-            catch (ArgumentException x)
+            catch (UserErrorException x)
             {
                 Console.Error.WriteLine(x.Message);
             }

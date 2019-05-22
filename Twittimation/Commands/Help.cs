@@ -40,7 +40,7 @@ namespace Twittimation.Commands
                     }
                 }
                 if (invalidArgs.Count > 0)
-                    throw new ArgumentException("Invalid Commands!\r\nThese commands don't exist: " + string.Join(", ", invalidArgs));
+                    throw new UserErrorException("Invalid Commands!\r\nThese commands don't exist: " + string.Join(", ", invalidArgs));
             }
                 
         }

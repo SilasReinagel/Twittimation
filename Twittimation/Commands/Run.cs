@@ -18,6 +18,8 @@ namespace Twittimation.Commands
         private readonly Cli _cli;
         private readonly IAutomaton _automaton;
 
+        private DateTimeOffset _lastUpdate;
+
         public Run(IStored<Tasks> tasks, IStored<Tasks> likes, Cli cli, IAutomaton automaton)
         {
             _tweetTasks = tasks;
@@ -28,14 +30,16 @@ namespace Twittimation.Commands
 
         protected override void Go(string[] args)
         {
+            _lastUpdate = DateTimeOffset.Now;
             Console.WriteLine($"Running. Currently, there are {_tweetTasks.Get().Count} scheduled tasks.");
             while (true)
             {
                 var time = DateTimeOffset.Now;
                 _tweetTasks.Update(RunScheduledTasks(time));
                 _likeTasks.Update(RunScheduledTasks(time));
-                _automaton.Update();
-                Thread.Sleep(5000);
+                _automaton.Update(time - _lastUpdate);
+                _lastUpdate = time;
+                Thread.Sleep(1000);
             }
         }
 

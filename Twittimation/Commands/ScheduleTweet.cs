@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Twittimation.Commands.Converters;
 using Twittimation.IO;
 
 namespace Twittimation.Commands
@@ -23,10 +24,7 @@ namespace Twittimation.Commands
 
         protected override void Go(string[] args)
         {
-            if (!DateTimeOffset.TryParse(args[0], out DateTimeOffset time))
-                throw new ArgumentException("Invalid time format! Time can be formatted as \"Year/Month/Day Hour:Minute:Second\"");
-            if (time < DateTimeOffset.Now)
-                throw new ArgumentException("Time is in the past!");
+            var time = DateTimeOffsetConverter.Convert(args[0]);
             var text = args[1];
             _tasks.Update(tasks =>
             {

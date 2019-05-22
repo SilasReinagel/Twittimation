@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Text;
 using Twittimation.Http;
 using Twittimation.IO;
@@ -29,31 +30,19 @@ namespace Twittimation.Commands
         {
             var credentials = _credentials.Get();
             if (!credentials.AreValid)
-                throw new ArgumentException("Credentials have not been setup. Use 'SaveCredentials' to initialize.");
+                throw new UserErrorException("Credentials have not been setup. Use 'SaveCredentials' to initialize.");
+            LikeTweet(args, credentials);
+        }
 
-            try
-            {
-                var client = new OAuthClient("https://api.twitter.com/1.1/",
-                    credentials.ConsumerKey, credentials.ConsumerKeySecret, credentials.AccessToken, credentials.AccessTokenSecret);
-                var result = JObject.Parse(client.SendRequest("POST", "favorites/create.json",
-                    new Dictionary<string, string>() { { "id", args[0] } }, new JsonData()).Result);
-                if (result.ContainsKey("errors"))
+        private void LikeTweet(string[] args, Credentials credentials)
+        {
+            RethrowExceptionsAsUserError(() =>
                 {
-                    var error = result.GetValue("errors").ToObject<TwitterError[]>();
-                    if (error.Length > 0)
-                    {
-                        Console.Error.WriteLine("Twitter error: ");
-                        Console.Error.WriteLine("code: " + error[0].Code.ToString());
-                        Console.Error.WriteLine("message: " + error[0].Message);
-                    }
-                }
-                else
+                    new TwitterClient(credentials).SendRequest("POST", "favorites/create.json",
+                        new Dictionary<string, string>() { { "id", args[0] } }, new JsonData()).GetAwaiter().GetResult();
                     Console.WriteLine("Success");
-            }
-            catch (Exception)
-            {
-                Console.Error.WriteLine("Network error!");
-            }
+                },
+                typeof(TwitterException), typeof(TimeoutException), typeof(WebException));
         }
     }
 }
