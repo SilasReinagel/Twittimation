@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Carvana;
 
 namespace Twittimation.Commands
 {
@@ -14,10 +15,18 @@ namespace Twittimation.Commands
         public abstract string ExtendedHelp { get; }
 
         protected abstract void Go(string[] args);
-        public void Execute(string[] args)
+        public Result Execute(string[] args)
         {
-            ValidateArgCount(args);
-            Go(args);
+            try
+            {
+                ValidateArgCount(args);
+                Go(args);
+                return Result.Success();
+            }
+            catch (Exception e)
+            {
+                return Result.Errored(ResultStatus.ProcessingError, e.ToString());
+            }
         }
 
         public string CreateSyntaxString()

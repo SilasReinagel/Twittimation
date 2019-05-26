@@ -7,9 +7,9 @@ namespace Twittimation.Commands
 {
     public sealed class Cancel : Command
     {
-        public override List<string> RequiredArgs { get; } = new List<string>() { "Id" };
+        public override List<string> RequiredArgs { get; } = new List<string>() { "TaskId" };
         public override List<string> OptionalArgs { get; } = new List<string>();
-        public override Optional<string> OptionalRepeatedArg { get; } = "Id";
+        public override Optional<string> OptionalRepeatedArg { get; } = "TaskId";
         public override string HelpInfo { get; } = "Cancels the specified tasks.";
         public override string ExtendedHelp => HelpInfo;
 

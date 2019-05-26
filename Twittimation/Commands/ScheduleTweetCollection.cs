@@ -25,7 +25,7 @@ namespace Twittimation.Commands
 
         protected override void Go(string[] args)
         {
-            var time = DateTimeOffsetConverter.Convert(args[0]);
+            var time = DateTimeOffsetConverter.ParseFutureTime(args[0]);
             if (!TimeSpan.TryParse(args[1], out TimeSpan interval))
                 throw new UserErrorException("Invalid time span format! Time spans can be formatted as \"Days:Hours:Minutes:Seconds\"");
             if (interval <= TimeSpan.Zero)

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Carvana;
 using Twittimation.Commands;
 
 namespace Twittimation
@@ -9,11 +10,10 @@ namespace Twittimation
     public class Cli
     {
         public Dictionary<string, Command> Commands { get; }
-        private readonly string _commandNotFoundMessage;
+        private readonly string _commandNotFoundMessage = "Invalid Command, type 'help' to display all commands with their help sections";
 
-        public Cli(string commandNotFoundMessage, params Command[] commands)
+        public Cli(params Command[] commands)
         {
-            _commandNotFoundMessage = commandNotFoundMessage;
             Commands = new Dictionary<string, Command>(StringComparer.CurrentCultureIgnoreCase);
             AddCommands(commands);
         }
@@ -29,28 +29,27 @@ namespace Twittimation
             Commands.Add(command.Name.ToUpper(), command);
         }
 
-        public bool Execute(string input)
+        public Result Execute(string input)
         {
             return Execute(ReadCommandLineArgs(input));
         }
 
-        public bool Execute(string[] args)
+        public Result Execute(string[] args)
         {
             try
             {
                 if (args.Length > 0 && Commands.ContainsKey(args.First()))
                 {
                     Commands[args.First()].Execute(args.SubArray(1, args.Length - 1));
-                    return true;
                 }
                 else
-                    Console.Error.WriteLine(_commandNotFoundMessage);
+                    return Result.InvalidRequest(_commandNotFoundMessage);
             }
             catch (UserErrorException x)
             {
-                Console.Error.WriteLine(x.Message);
+                return Result.Errored(ResultStatus.InvalidRequest, x.Message);
             }
-            return false;
+            return Result.Success();
         }
 
         private string[] ReadCommandLineArgs(string input)

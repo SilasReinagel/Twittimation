@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27703.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Twittimation", "Twittimation\Twittimation.csproj", "{5D1FD046-C43B-4E4F-9379-1F6840A6C1B5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Twittimation.Tests", "Twittimation.Tests\Twittimation.Tests.csproj", "{4F0BA17E-98C2-41A1-8426-39B329396E20}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{5D1FD046-C43B-4E4F-9379-1F6840A6C1B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5D1FD046-C43B-4E4F-9379-1F6840A6C1B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5D1FD046-C43B-4E4F-9379-1F6840A6C1B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F0BA17E-98C2-41A1-8426-39B329396E20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F0BA17E-98C2-41A1-8426-39B329396E20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F0BA17E-98C2-41A1-8426-39B329396E20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F0BA17E-98C2-41A1-8426-39B329396E20}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
