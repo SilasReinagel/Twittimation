@@ -24,7 +24,7 @@ namespace Twittimation.Commands
 
         protected override void Go(string[] args)
         {
-            var time = DateTimeOffsetConverter.Convert(args[0]);
+            var time = DateTimeOffsetConverter.ParseFutureTime(args[0]);
             var tweet = args[1];
             _tasks.Update(tasks =>
             {

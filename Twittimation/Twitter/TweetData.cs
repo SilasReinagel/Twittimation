@@ -4,7 +4,7 @@ using System;
 
 namespace Twittimation.Twitter
 {
-    public class TwitterTweet
+    public class TweetData
     {
         [JsonIgnore]
         public DateTimeOffset CreatedAt

@@ -1,8 +1,8 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Carvana;
 using Twittimation.Commands;
 using Twittimation.Http;
 using Twittimation.IO;
@@ -10,26 +10,29 @@ using Twittimation.Twitter;
 
 namespace Twittimation
 {
-    public class RandomLikeAutomaton : IAutomaton
+    public sealed class RandomLikeAutomaton : IAutomaton
     {
         private readonly IStored<RandomLikeAutomatonData> _data;
         private readonly IStored<Tasks> _tasks;
         private readonly Like _like;
-        private readonly IStored<Credentials> _credentials;
+        private readonly ITwitterGateway _twitter;
         private readonly Random _random = new Random(Guid.NewGuid().GetHashCode());
         private TimeSpan _timeTilNextUpdate = TimeSpan.Zero;
         private const int SecondsPerHour = 60 * 60;
 
-        public RandomLikeAutomaton(IStored<RandomLikeAutomatonData> data, IStored<Tasks> tasks, Like like, IStored<Credentials> credentials)
+        public RandomLikeAutomaton(IStored<RandomLikeAutomatonData> data, IStored<Tasks> tasks, Like like, ITwitterGateway twitter)
         {
             _data = data;
             _tasks = tasks;
             _like = like;
-            _credentials = credentials;
+            _twitter = twitter;
         }
 
         public void Update(TimeSpan delta)
         {
+            if (!_data.Get().IsEnabled)
+                return; 
+            
             _timeTilNextUpdate -= delta;
             if(_timeTilNextUpdate <= TimeSpan.Zero)
             {
@@ -40,61 +43,62 @@ namespace Twittimation
 
         private void Update()
         {
-            var credentials = _credentials.Get();
-            if (credentials.AreValid)
+            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            try
             {
-                var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                try
+                var followeesResp = _twitter.GetFriendIds().GetAwaiter().GetResult();
+                followeesResp.OnSuccess(ids =>
                 {
-                    var client = new TwitterClient(credentials);
-                    var followees = client.SendRequest("GET", "friends/ids.json", new JsonData()).GetAwaiter().GetResult();
-                    var tasks = _tasks.Get();
+                    var updatedTasks = _tasks.Get();
                     _data.Update(d =>
                     {
                         if (d.LastUpdatedTimestamp < now - now % (SecondsPerHour * 24))
                             d.LikesGivenPerFollowee = d.LikesGivenPerFollowee.ToDictionary(kvp => kvp.Key, kvp => 0);
-                        ScheduleLikesForFollowees(now, client, followees.GetValue("ids").ToObject<long[]>(), d, tasks);
+                        ScheduleLikesForFollowees(now, ids, d, updatedTasks).GetAwaiter().GetResult();
                         d.LastUpdatedTimestamp = now;
                         return d;
                     });
-                    _tasks.Update(t => tasks);
-                }
-                catch (TwitterException x)
-                {
-                    Console.Error.WriteLine("Twitter error!");
-                }
-                catch (Exception x)
-                {
-                    Console.Error.WriteLine("Network error!");
-                }
+                    _tasks.Update(t => updatedTasks);
+                });
+            }
+            catch (TwitterException x)
+            {
+                Console.Error.WriteLine($"Twitter error! {x}");
+            }
+            catch (Exception x)
+            {
+                Console.Error.WriteLine($"Network error! {x}");
             }
         }
 
-        private void ScheduleLikesForFollowees(long now, TwitterClient client, long[] followees, RandomLikeAutomatonData data, Tasks tasks)
+        private async Task<Result> ScheduleLikesForFollowees(long now, IEnumerable<string> userIds, RandomLikeAutomatonData data, Tasks tasks)
         {
-            foreach (var id in followees)
+            foreach (var id in userIds)
             {
-                List<TwitterTweet> tweets = GetNewTweets(data.MaxLikesPerFollowee.ContainsKey(id) ? data.LastUpdatedTimestamp : now - SecondsPerHour * 24,
-                    id, client);
+                var tweetsResult = await _twitter.GetNewTweets(data.MaxLikesPerFollowee.ContainsKey(id) ? data.LastUpdatedTimestamp : now - SecondsPerHour * 24, id.ToString());
+                if (!tweetsResult.Succeeded())
+                    return tweetsResult;
+                
                 if (!data.MaxLikesPerFollowee.ContainsKey(id))
                 {
                     data.MaxLikesPerFollowee.Add(id, 0);
                     data.LikesGivenPerFollowee.Add(id, 0);
                 }
-                ScheduleLikesForFollowee(now, data, tasks, id, tweets);
+                ScheduleLikesForFollowee(now, data, tasks, id, tweetsResult.Content);
             }
+            return Result.Success();
         }
 
-        private void ScheduleLikesForFollowee(long now, RandomLikeAutomatonData data, Tasks tasks, long id, List<TwitterTweet> tweets)
+        private void ScheduleLikesForFollowee(long now, RandomLikeAutomatonData data, Tasks tasks, string userId, List<TweetData> tweets)
         {
             for (var i = 0; i < tweets.Count; i++)
-                if (data.PercentageLikeChance > _random.Next(1) && data.LikesGivenPerFollowee[id] < data.MaxLikesPerFollowee[id])
+                if (data.PercentageLikeChance > _random.Next(1) && data.LikesGivenPerFollowee[userId] < data.MaxLikesPerFollowee[userId])
                 {
                     var operation = new ScheduledOperation(DateTimeOffset.FromUnixTimeSeconds(now + _random.Next(SecondsPerHour * 2)),
                         _like.Name,
                         tweets[i].Id.ToString());
                     tasks.Add(CreateTaskWithUniqueId(tasks, operation));
-                    data.LikesGivenPerFollowee[id]++;
+                    data.LikesGivenPerFollowee[userId]++;
                 }
         }
 
@@ -105,26 +109,6 @@ namespace Twittimation
                 taskId++;
             var task = new ScheduledTask(taskId, operation);
             return task;
-        }
-
-        private static List<TwitterTweet> GetNewTweets(long since, long id, TwitterClient client)
-        {
-            return client.SendRequest(
-                    "GET",
-                    "statuses/user_timeline.json",
-                    new Dictionary<string, string>() {
-                        { "user_id", id.ToString() },
-                        { "count", "50" },
-                        { "include_rts", "false" },
-                        { "trim_user", "true" },
-                        { "exclude_replies", "true" }
-                    },
-                    new JsonData())
-                .GetAwaiter()
-                .GetResult()
-                .ToObject<List<TwitterTweet>>()
-                .Where(t => t.CreatedAt.ToUnixTimeSeconds() > since)
-                .ToList();
         }
     }
 }

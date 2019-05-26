@@ -1,5 +1,4 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -13,18 +12,17 @@ namespace Twittimation
     {
         private string _apiUrl;
         private string _consumerKey;
-        private string _consumerKeySecret;
         private string _accessToken;
-        private string _accessTokenSecret;
         private HMACSHA1 _encryptor;
+        
+        public OAuthClient(string apiUrl, Credentials credentials)
+            : this(apiUrl, credentials.ConsumerKey, credentials.ConsumerKeySecret, credentials.AccessToken, credentials.AccessTokenSecret) {}
         
         public OAuthClient(string apiUrl, string consumerKey, string consumerKeySecret, string accessToken, string accessTokenSecret)
         {
             _apiUrl = apiUrl;
             _consumerKey = consumerKey;
-            _consumerKeySecret = consumerKeySecret;
             _accessToken = accessToken;
-            _accessTokenSecret = accessTokenSecret;
             _encryptor = new HMACSHA1(new ASCIIEncoding().GetBytes(consumerKeySecret + "&" + accessTokenSecret));
         }
 
