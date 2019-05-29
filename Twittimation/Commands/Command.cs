@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Carvana;
 
 namespace Twittimation.Commands
 {
-    public abstract class Command
+    public abstract class Command : ICommand
     {
         public string Name => GetType().Name;
         public abstract List<string> RequiredArgs { get; }
@@ -15,7 +16,8 @@ namespace Twittimation.Commands
         public abstract string ExtendedHelp { get; }
 
         protected abstract void Go(string[] args);
-        public Result Execute(string[] args)
+        
+        public async Task<Result> Execute(string[] args)
         {
             try
             {
@@ -70,14 +72,14 @@ namespace Twittimation.Commands
             }
             catch (UserErrorException x)
             {
-                throw x;
+                throw;
             }
             catch (Exception x)
             {
                 var type = x.GetType();
                 if (exceptionTypes.Any(t => type.IsAssignableFrom(t)))
                     throw new UserErrorException("Error\r\n" + x.GetType().ToString() + "\r\n" + x.Message);
-                throw x;
+                throw;
             }
         }
     }

@@ -3,30 +3,30 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Carvana;
-using Twittimation.Commands;
 
 namespace Twittimation
 {
     public class Cli
     {
-        public Dictionary<string, Command> Commands { get; }
-        private readonly string _commandNotFoundMessage = "Invalid Command, type 'help' to display all commands with their help sections";
+        private readonly ILog _log;
+        private readonly Dictionary<string, ICommand> _commands;
 
-        public Cli(params Command[] commands)
+        public Cli(ILog log, params ICommand[] commands)
         {
-            Commands = new Dictionary<string, Command>(StringComparer.CurrentCultureIgnoreCase);
+            _log = log;
+            _commands = new Dictionary<string, ICommand>(StringComparer.InvariantCultureIgnoreCase);
             AddCommands(commands);
         }
 
-        public void AddCommands(params Command[] commands)
+        public void AddCommands(params ICommand[] commands)
         {
             foreach (var command in commands)
                 AddCommand(command);
         }
 
-        public void AddCommand(Command command)
+        public void AddCommand(ICommand command)
         {
-            Commands.Add(command.Name.ToUpper(), command);
+            _commands.Add(command.Name, command);
         }
 
         public Result Execute(string input)
@@ -36,20 +36,22 @@ namespace Twittimation
 
         public Result Execute(string[] args)
         {
+            var result = Result.Success();
             try
             {
-                if (args.Length > 0 && Commands.ContainsKey(args.First()))
+                if (args.Length > 0 && _commands.ContainsKey(args.First()))
                 {
-                    Commands[args.First()].Execute(args.SubArray(1, args.Length - 1));
+                    _commands[args.First()].Execute(args.SubArray(1, args.Length - 1));
                 }
                 else
-                    return Result.InvalidRequest(_commandNotFoundMessage);
+                    result = Result.InvalidRequest($"Unknown Command '{args[0]}', type 'help' to display all commands with their help sections");
             }
             catch (UserErrorException x)
             {
-                return Result.Errored(ResultStatus.InvalidRequest, x.Message);
+                result = Result.Errored(ResultStatus.InvalidRequest, x.Message);
             }
-            return Result.Success();
+            
+            return result.OnFailure(x => _log.Error(result.ErrorMessage));
         }
 
         private string[] ReadCommandLineArgs(string input)
