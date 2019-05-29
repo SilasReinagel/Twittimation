@@ -13,7 +13,7 @@ namespace Twittimation.Tests
             var storage = new InMemoryStorage();
             var app = CreateApp(storage);
 
-            var result = app.Execute("savecredentials consumerKey consumerKeySecret accessToken accessTokenSecret");
+            var result = app.Execute("savecredentials username consumerKey consumerKeySecret accessToken accessTokenSecret");
 
             Assert.IsTrue(result.Succeeded());
             Assert.AreEqual("consumerKey", storage.Get<Credentials>(nameof(Credentials)).ConsumerKey);
@@ -21,7 +21,7 @@ namespace Twittimation.Tests
 
         private Cli CreateApp(IStorage storage)
         {
-            return Program.Init(storage, new TwitterStub());
+            return Program.Init(new ConsoleLog(), storage, new TwitterStub());
         }
     }
 }
