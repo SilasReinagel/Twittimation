@@ -13,7 +13,7 @@ namespace Twittimation
         {
             var storage = new JsonFileStorage("./data/");
             var twitter = new HttpTwitterClient(new KeyStored<Credentials>(storage, "Credentials", () => Credentials.Invalid));
-            var log = new ConsoleLog();
+            var log = new WithDateTime(new ConsoleLog());
          
             var options = new KeyStored<AppOptions>(storage, nameof(AppOptions), () => new AppOptions()).Get();
             if (options.ShowBirdArt)
@@ -45,28 +45,28 @@ namespace Twittimation
         private static void AddNormalCommands(Cli cli, ILog log, IStorage storage, ITwitterGateway twitter)
         {
             var credentials = new KeyStored<Credentials>(storage, "Credentials", () => Credentials.Invalid);
-            var tweetTasks = new KeyStored<Tasks>(storage, "TweetTasks", () => new Tasks());
-            var likeTasks = new KeyStored<Tasks>(storage, "LikeTasks", () => new Tasks());
+            var tweetTasks = new KeyStored<ScheduledTasks>(storage, "TweetTasks", () => new ScheduledTasks());
+            var likeTasks = new KeyStored<ScheduledTasks>(storage, "LikeTasks", () => new ScheduledTasks());
+            var tweet = new Tweet(twitter, log);
+            var like = new Like(twitter, log);
             var automatonData = new KeyStored<RandomLikeAutomatonData>(storage, "AutomatonData", () => new RandomLikeAutomatonData());
-            var tweet = new Tweet(twitter);
-            var like = new Like(twitter);
+            var likeAutomaton = new RandomLikeAutomaton(automatonData, likeTasks, like, twitter, log);
             var rawCommands = new List<Command>
             {
-                new SaveCredentials(credentials, log),
+                new SetupCommand(credentials, log),
                 new ViewCredentials(credentials, log),
-                new ScheduleTweet(tweetTasks, tweet),
-                new ScheduleTweetCollection(tweetTasks, tweet),
-                new Run(tweetTasks, likeTasks, cli, new RandomLikeAutomaton(automatonData, likeTasks, like, twitter)),
-                new ListTasks(tweetTasks),
-                new Cancel(tweetTasks),
+                new ScheduleTweet(tweetTasks, tweet, log),
+                new ViewTasks(tweetTasks, log),
+                new Run(tweetTasks, likeTasks, cli, likeAutomaton, log),
+                new Cancel(tweetTasks, log),
                 tweet,
                 like,
-                new SetMaxLikes(automatonData, twitter)
+                new SetMaxLikes(automatonData, twitter, log)
             };
             
             cli.AddCommands(rawCommands
                     .Select(x => new WithDisplayedUsername(log, credentials, x))
-                    .Concat(new List<ICommand> { new Help(rawCommands.ToDictionary(x => x.Name, x => x)) } )
+                    .Concat(new List<ICommand> { new Help(rawCommands.ToDictionary(x => x.Name, x => x), log) } )
                     .ToArray());
         }
     }

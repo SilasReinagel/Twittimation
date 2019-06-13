@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Twittimation.Commands.Converters;
 using Twittimation.IO;
 
@@ -13,13 +12,15 @@ namespace Twittimation.Commands
         public override string HelpInfo { get; } = "Likes the specified tweet at the scheduled time.";
         public override string ExtendedHelp { get; } = "Likes the specified tweet at the scheduled time. \r\nTime can be formatted as \"Year/Month/Day Hour:Minute:Second\".";
 
-        private readonly IStored<Tasks> _tasks;
+        private readonly IStored<ScheduledTasks> _tasks;
         private readonly Like _like;
+        private readonly ILog _log;
 
-        public ScheduleLike(IStored<Tasks> tasks, Like like)
+        public ScheduleLike(IStored<ScheduledTasks> tasks, Like like, ILog log)
         {
             _tasks = tasks;
             _like = like;
+            _log = log;
         }
 
         protected override void Go(string[] args)
@@ -28,12 +29,9 @@ namespace Twittimation.Commands
             var tweet = args[1];
             _tasks.Update(tasks =>
             {
-                var id = 0;
-                while (id < tasks.Count && id == tasks[id].Id)
-                    id++;
-                var task = new ScheduledTask(id, new ScheduledOperation(time, _like.Name, tweet));
+                var task = new ScheduledTask(tasks.NextId, new ScheduledOperation(time, _like.Name, tweet));
                 tasks.Add(task);
-                Console.WriteLine("Task added:\r\nID: " + task.Id + "\r\nTime: " + task.ScheduledOperations[0].Time.ToString());
+                _log.Info($"Added Task '{task.Id}' - {task.ScheduledOperations[0].Time}");
                 return tasks;
             });
         }

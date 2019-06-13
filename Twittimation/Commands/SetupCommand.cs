@@ -3,7 +3,7 @@ using Twittimation.IO;
 
 namespace Twittimation.Commands
 {
-    public sealed class SaveCredentials : Command
+    public sealed class SetupCommand : Command
     {
         public override List<string> RequiredArgs { get; } = new List<string>()
             { "Username", "ConsumerKey", "ConsumerKeySecret", "AccessToken", "AccessTokenSecret" };
@@ -15,7 +15,7 @@ namespace Twittimation.Commands
         private readonly IStored<Credentials> _credentials;
         private readonly ILog _log;
 
-        public SaveCredentials(IStored<Credentials> credentials, ILog log)
+        public SetupCommand(IStored<Credentials> credentials, ILog log)
         {
             _credentials = credentials;
             _log = log;

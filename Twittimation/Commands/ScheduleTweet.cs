@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Twittimation.Commands.Converters;
 using Twittimation.IO;
 
@@ -13,13 +12,15 @@ namespace Twittimation.Commands
         public override string HelpInfo { get; } = "Posts the tweet at the scheduled time.";
         public override string ExtendedHelp { get; } = "Posts a tweet with the specified text at the scheduled time.\r\nTime can be formatted as \"Year/Month/Day Hour:Minute:Second\".";
 
-        private readonly IStored<Tasks> _tasks;
+        private readonly IStored<ScheduledTasks> _tasks;
         private readonly Tweet _tweet;
+        private readonly ILog _log;
 
-        public ScheduleTweet(IStored<Tasks> tasks, Tweet tweet)
+        public ScheduleTweet(IStored<ScheduledTasks> tasks, Tweet tweet, ILog log)
         {
             _tasks = tasks;
             _tweet = tweet;
+            _log = log;
         }
 
         protected override void Go(string[] args)
@@ -28,12 +29,9 @@ namespace Twittimation.Commands
             var text = args[1];
             _tasks.Update(tasks =>
             {
-                var id = 0;
-                while (id < tasks.Count && id == tasks[id].Id)
-                    id++;
-                var task = new ScheduledTask(id, new ScheduledOperation(time, _tweet.Name, text));
+                var task = new ScheduledTask(tasks.NextId, new ScheduledOperation(time, _tweet.Name, text));
                 tasks.Add(task);
-                Console.WriteLine("Task added:\r\nID: " + task.Id + "\r\nTime: " + task.ScheduledOperations[0].Time.ToString());
+                _log.Info($"Added Task '{task.Id}' - {task.ScheduledOperations[0].Time}");
                 return tasks;
             });
         }
