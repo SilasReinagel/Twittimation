@@ -8,7 +8,7 @@ namespace Twittimation.Commands
 {
     public abstract class Command : ICommand
     {
-        public string Name => GetType().Name;
+        public string Name => GetType().Name.Replace("Command", "");
         public abstract List<string> RequiredArgs { get; }
         public abstract List<string> OptionalArgs { get; }
         public abstract Optional<string> OptionalRepeatedArg { get; }
@@ -33,7 +33,7 @@ namespace Twittimation.Commands
 
         public string CreateSyntaxString()
         {
-            return $"{Name}{string.Concat(RequiredArgs.Select(a => " <" + a + ">"))}{string.Concat(OptionalArgs.Select(a => " [<" + a + ">]"))}{(OptionalRepeatedArg.HasValue ? " [<" + OptionalRepeatedArg.Value + ">]...": "")}";
+            return $"{Name}{string.Concat(RequiredArgs.Select(a => " <" + a + ">"))}{string.Concat(OptionalArgs.Select(a => " [" + a + "]"))}{(OptionalRepeatedArg.HasValue ? " [" + OptionalRepeatedArg.Value + "]...": "")}";
         }
 
         protected void ValidateArgCount(string[] args)

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Carvana;
 using Twittimation.IO;
 using Twittimation.Twitter;
@@ -16,11 +15,13 @@ namespace Twittimation.Commands
 
         private readonly IStored<RandomLikeAutomatonData> _data;
         private readonly ITwitterGateway _twitter;
+        private readonly ILog _log;
 
-        public SetMaxLikes(IStored<RandomLikeAutomatonData> data, ITwitterGateway twitter)
+        public SetMaxLikes(IStored<RandomLikeAutomatonData> data, ITwitterGateway twitter, ILog log)
         {
             _data = data;
             _twitter = twitter;
+            _log = log;
         }
 
         protected override void Go(string[] args)
@@ -32,8 +33,8 @@ namespace Twittimation.Commands
             var userIdResp = _twitter.GetUserId(username).GetAwaiter().GetResult();
             userIdResp
                 .OnSuccess(x => UpdateMaxLikesForFollowee(x, amount))
-                .OnSuccess(() => Console.WriteLine($"Max has been set for {username}"))
-                .OnFailure(x => Console.Error.WriteLine($"Failed to Like Tweet: {x.ErrorMessage}"));
+                .OnSuccess(() => _log.Info($"Max has been set for {username}"))
+                .OnFailure(x => _log.Error($"Failed to Like Tweet: {x.ErrorMessage}"));
         }
 
         private void UpdateMaxLikesForFollowee(string userId, int amount)

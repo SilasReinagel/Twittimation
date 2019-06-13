@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Carvana;
 using Twittimation.Commands;
-using Twittimation.Http;
 using Twittimation.IO;
 using Twittimation.Twitter;
 
@@ -13,19 +12,21 @@ namespace Twittimation
     public sealed class RandomLikeAutomaton : IAutomaton
     {
         private readonly IStored<RandomLikeAutomatonData> _data;
-        private readonly IStored<Tasks> _tasks;
+        private readonly IStored<ScheduledTasks> _tasks;
         private readonly Like _like;
         private readonly ITwitterGateway _twitter;
+        private readonly ILog _log;
         private readonly Random _random = new Random(Guid.NewGuid().GetHashCode());
         private TimeSpan _timeTilNextUpdate = TimeSpan.Zero;
         private const int SecondsPerHour = 60 * 60;
 
-        public RandomLikeAutomaton(IStored<RandomLikeAutomatonData> data, IStored<Tasks> tasks, Like like, ITwitterGateway twitter)
+        public RandomLikeAutomaton(IStored<RandomLikeAutomatonData> data, IStored<ScheduledTasks> tasks, Like like, ITwitterGateway twitter, ILog log)
         {
             _data = data;
             _tasks = tasks;
             _like = like;
             _twitter = twitter;
+            _log = log;
         }
 
         public void Update(TimeSpan delta)
@@ -63,15 +64,15 @@ namespace Twittimation
             }
             catch (TwitterException x)
             {
-                Console.Error.WriteLine($"Twitter error! {x}");
+                _log.Error($"Twitter error! {x}");
             }
             catch (Exception x)
             {
-                Console.Error.WriteLine($"Network error! {x}");
+                _log.Error($"Network error! {x}");
             }
         }
 
-        private async Task<Result> ScheduleLikesForFollowees(long now, IEnumerable<string> userIds, RandomLikeAutomatonData data, Tasks tasks)
+        private async Task<Result> ScheduleLikesForFollowees(long now, IEnumerable<string> userIds, RandomLikeAutomatonData data, ScheduledTasks tasks)
         {
             foreach (var id in userIds)
             {
@@ -89,7 +90,7 @@ namespace Twittimation
             return Result.Success();
         }
 
-        private void ScheduleLikesForFollowee(long now, RandomLikeAutomatonData data, Tasks tasks, string userId, List<TweetData> tweets)
+        private void ScheduleLikesForFollowee(long now, RandomLikeAutomatonData data, ScheduledTasks tasks, string userId, List<TweetData> tweets)
         {
             for (var i = 0; i < tweets.Count; i++)
                 if (data.PercentageLikeChance > _random.Next(1) && data.LikesGivenPerFollowee[userId] < data.MaxLikesPerFollowee[userId])
@@ -102,7 +103,7 @@ namespace Twittimation
                 }
         }
 
-        private static ScheduledTask CreateTaskWithUniqueId(Tasks tasks, ScheduledOperation operation)
+        private static ScheduledTask CreateTaskWithUniqueId(ScheduledTasks tasks, ScheduledOperation operation)
         {
             var taskId = 0;
             while (taskId < tasks.Count && taskId == tasks[taskId].Id)

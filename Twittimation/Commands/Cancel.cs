@@ -13,11 +13,13 @@ namespace Twittimation.Commands
         public override string HelpInfo { get; } = "Cancels the specified tasks.";
         public override string ExtendedHelp => HelpInfo;
 
-        private readonly IStored<Tasks> _tasks;
+        private readonly IStored<ScheduledTasks> _tasks;
+        private readonly ILog _log;
 
-        public Cancel(IStored<Tasks> tasks)
+        public Cancel(IStored<ScheduledTasks> tasks, ILog log)
         {
             _tasks = tasks;
+            _log = log;
         }
 
         protected override void Go(string[] args)
@@ -28,7 +30,7 @@ namespace Twittimation.Commands
                     if (tasks.Any(t => t.Id.ToString() == arg))
                         tasks.RemoveAll(t => t.Id.ToString() == arg);
                     else
-                        Console.Error.WriteLine("Task with id " + arg + " doesn't exist.");
+                        _log.Error("Task with id " + arg + " doesn't exist.");
                 return tasks;
             });
         }

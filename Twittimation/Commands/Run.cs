@@ -8,30 +8,33 @@ namespace Twittimation.Commands
     public sealed class Run : Command
     {
         public override List<string> RequiredArgs { get; } = new List<string>();
-        public override List<string> OptionalArgs { get; } = new List<string>();
+        public override List<string> OptionalArgs { get; } = new List<string> { "{Forever|Once}"};
         public override Optional<string> OptionalRepeatedArg { get; } = new Optional<string>();
-        public override string HelpInfo { get; } = "Continuously runs uncompleted tasks that are scheduled for present or the past.";
+        public override string HelpInfo { get; } = "Runs uncompleted tasks that are scheduled for present or the past.";
         public override string ExtendedHelp => HelpInfo;
 
-        private readonly IStored<Tasks> _tweetTasks;
-        private readonly IStored<Tasks> _likeTasks;
+        private readonly IStored<ScheduledTasks> _tweetTasks;
+        private readonly IStored<ScheduledTasks> _likeTasks;
         private readonly Cli _cli;
         private readonly IAutomaton _automaton;
+        private readonly ILog _log;
 
         private DateTimeOffset _lastUpdate;
 
-        public Run(IStored<Tasks> tasks, IStored<Tasks> likes, Cli cli, IAutomaton automaton)
+        public Run(IStored<ScheduledTasks> tasks, IStored<ScheduledTasks> likes, Cli cli, IAutomaton automaton, ILog log)
         {
             _tweetTasks = tasks;
             _likeTasks = likes;
             _cli = cli;
             _automaton = automaton;
+            _log = log;
         }
 
         protected override void Go(string[] args)
         {
+            var shouldRunContinuously = args.Length == 0 || !args[0].Equals("once", StringComparison.InvariantCultureIgnoreCase);
             _lastUpdate = DateTimeOffset.Now;
-            Console.WriteLine($"Running. Currently, there are {_tweetTasks.Get().Count} scheduled tasks.");
+            _log.Info($"Running. Currently, there are {_tweetTasks.Get().Count} scheduled tasks.");
             while (true)
             {
                 var time = DateTimeOffset.Now;
@@ -39,11 +42,13 @@ namespace Twittimation.Commands
                 _likeTasks.Update(RunScheduledTasks(time));
                 _automaton.Update(time - _lastUpdate);
                 _lastUpdate = time;
+                if (!shouldRunContinuously)
+                    return;
                 Thread.Sleep(1000);
             }
         }
 
-        private Func<Tasks, Tasks> RunScheduledTasks(DateTimeOffset time)
+        private Func<ScheduledTasks, ScheduledTasks> RunScheduledTasks(DateTimeOffset time)
         {
             return tasks =>
             {
